@@ -52,7 +52,9 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.sp = 7
+        self.reg[self.sp]= 0xF4
         self.HALTED = False
+        self.sub_routine = False
         branchTable = {
             HLT: halt_op,
             LDI: ldi_op,
@@ -75,7 +77,7 @@ class CPU:
         }
     def halt_op ():
         self.HALT = True
-    def pop_op():
+    def pop_op(operand_a):
         self.reg[operand_a] = self.ram_read(self.reg[self.sp])
         self.reg[self.sp] += 1
     def push_op():
@@ -92,9 +94,43 @@ class CPU:
     def mul_op():
         self.alu("MUL", operand_a, operand_b)
     def call_op():
-        pass
+        self.reg[self.sp] -= 1
+        self.raw_write(self.reg[self.sp] , self.pc + 2)
+        self.pc = self.reg[operand_a]
+        self.sub_routine = True
     def ret_op():
+        
+    def jmp_op():
         pass
+    def cmp_op():
+        pass
+    def jeq_op():
+        pass
+    def jne_op():
+        pass
+
+    #stretch
+    def st():
+        pass
+    def add_op():
+        pass
+    def or_op():
+        pass
+    def xor_op():
+        pass
+    def not_op():
+        pass
+    def shl_op():
+        pass
+    def shr_op():
+        pass
+    def mod_op():
+        pass
+    def int_op():
+        pass
+    def iret_op():
+        pass
+
     def load(self):
         """Load a program into memory."""
 
@@ -175,8 +211,7 @@ class CPU:
         """Run the CPU."""
  
         while not self.HALTED:
-            IR = self.ram[self.pc]
-            # LDI = self.ram_read(self.pc)
+            IR = ram_read(self , self.pc)
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
             operands = (IR  >> 6 ) & 0b11000000
