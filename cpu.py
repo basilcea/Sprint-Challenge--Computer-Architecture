@@ -52,9 +52,11 @@ class CPU:
         self.reg = [0] * 8
         self.pc = 0
         self.sp = 7
+        self.flag = 0b000
         self.reg[self.sp]= 0xF4
         self.HALTED = False
         self.sub_routine = False
+
         branchTable = {
             HLT: halt_op,
             LDI: ldi_op,
@@ -75,39 +77,60 @@ class CPU:
             INT: int_op,
             IRET: iret_op,
         }
+
     def halt_op ():
         self.HALT = True
+
     def pop_op(operand_a):
         self.reg[operand_a] = self.ram_read(self.reg[self.sp])
         self.reg[self.sp] += 1
+
     def push_op():
         self.reg[self.sp] -= 1
         value = self.reg[operand_a]
         address = self.reg[self.sp]
         self.raw_write(address, value)
+
     def prn_op():
         print(self.reg[operand_a])
+
     def ldi_op():
         self.reg[operand_a] = operand_b
+
     def add_op():
         self.alu("ADD", operand_a, operand_b)
+
     def mul_op():
         self.alu("MUL", operand_a, operand_b)
+
     def call_op():
         self.reg[self.sp] -= 1
         self.raw_write(self.reg[self.sp] , self.pc + 2)
         self.pc = self.reg[operand_a]
         self.sub_routine = True
+
     def ret_op():
+        self.pc = self.ram_read(self.reg[self.sp])
+        self.reg[self.sp] += 1
+        self.sub_routine = True
         
     def jmp_op():
-        pass
+        self.pc = self.reg[operand_a]
+        self.sub_routine = True
+        
     def cmp_op():
-        pass
+        self.pc = self.alu('CMP', operand_a, operand_b)
+        self.sub_routine = True
+        
     def jeq_op():
-        pass
+ 
     def jne_op():
-        pass
+        if (self.flag >> 3 & 0b1000) = 0 :
+            self.pc = self.reg[operand_a]
+            self.sub_routine = True
+        else:
+            self.sub_routine = False
+        
 
     #stretch
     def st():
@@ -178,6 +201,16 @@ class CPU:
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
         #elif op == "SUB": etc
+        elif op == 'CMP':
+            if self.reg[reg_a] == self.reg[reg_b]:
+                self.flag = 0b001
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.flag = 0b010
+            elif self.reg[reg_a] < self.reg[reg_b]:
+                self.flag = 0b100
+            else:
+                self.flag = 0b000
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -217,9 +250,10 @@ class CPU:
             operands = (IR  >> 6 ) & 0b11000000
             if IR in branchTable:
                 branchTable[IR]()
-                self.pc += operands + 1
             else:
                 raise Exception(f"Invalid instruction {hex(ir)} at address {hex(pc)}")
+            if not self.sub_routine:
+                self.pc += operands + 1
 
             # mask the remaining aspect of the code and then right shift
             # so it basically becomes the first value in IR * 2^1 + second value in IR*2^0
