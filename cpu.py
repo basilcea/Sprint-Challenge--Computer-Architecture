@@ -21,7 +21,7 @@ JMP = 0b01010100    # Jump to the address stored in the given register.
 JNE = 0b01010110    # If E flag is clear (false, 0), jump to the address stored in the given register.
 LD =  0b10000011    # Loads registerA with the value at the memory address stored in registerB.
 LDI = 0b10000010    # Set the value of a register to an integer.
-MOD = 0b10000010    # Divide the value in the first register by the value in the second, storing the remainder of the result in registerA.
+MOD = 0b10100100   # Divide the value in the first register by the value in the second, storing the remainder of the result in registerA.
 MUL = 0b10100010    # Multiply the values in two registers together and store the result in registerA.
 NOP = 0b00000000    # No operation. Do nothing for this instruction.
 NOT = 0b01101001    # Perform a bitwise-NOT on the value in a register.
@@ -56,104 +56,34 @@ class CPU:
         self.reg[self.sp]= 0xF4
         self.HALTED = False
         self.sub_routine = False
+        self.branchTable = {
+            HLT: self.halt_op,
+            LDI: self.ldi_op,
+            PRN: self.prn_op,
+            ADD: self.add_op,
+            MUL: self.mul_op,
+            PUSH: self.push_op,
+            POP: self.pop_op,
+            CMP: self.cmp_op,
+            JEQ: self.jeq_op,
+            JNE: self.jne_op,
+            JMP: self.jmp_op,
+            CALL: self.call_op,
+            RET: self.ret_op,
+            ADD: self.add_op,
+            OR: self.or_op,
+            XOR: self.xor_op,
+            NOT: self.not_op,
+            SHL: self.shl_op,
+            SHR: self.shr_op,
+            MOD: self.mod_op,
+            INT: self.int_op,
+            IRET: self.iret_op,
+            }
 
-        branchTable = {
-            HLT: halt_op,
-            LDI: ldi_op,
-            PRN: print_op,
-            ADD: add_op,
-            MUL: mul_op,
-            PUSH: push_op,
-            POP: pop_op,
-            CALL: call_op,
-            RET: ret_op,
-            ADD: add_op,
-            OR: or_op,
-            XOR: xor_op,
-            NOT: not_op,
-            SHL: shl_op,
-            SHR: shr_op,
-            MOD: mod_op,
-            INT: int_op,
-            IRET: iret_op,
-        }
+    
 
-    def halt_op ():
-        self.HALT = True
-
-    def pop_op(operand_a):
-        self.reg[operand_a] = self.ram_read(self.reg[self.sp])
-        self.reg[self.sp] += 1
-
-    def push_op():
-        self.reg[self.sp] -= 1
-        value = self.reg[operand_a]
-        address = self.reg[self.sp]
-        self.raw_write(address, value)
-
-    def prn_op():
-        print(self.reg[operand_a])
-
-    def ldi_op():
-        self.reg[operand_a] = operand_b
-
-    def add_op():
-        self.alu("ADD", operand_a, operand_b)
-
-    def mul_op():
-        self.alu("MUL", operand_a, operand_b)
-
-    def call_op():
-        self.reg[self.sp] -= 1
-        self.raw_write(self.reg[self.sp] , self.pc + 2)
-        self.pc = self.reg[operand_a]
-        self.sub_routine = True
-
-    def ret_op():
-        self.pc = self.ram_read(self.reg[self.sp])
-        self.reg[self.sp] += 1
-        self.sub_routine = True
-        
-    def jmp_op():
-        self.pc = self.reg[operand_a]
-        self.sub_routine = True
-        
-    def cmp_op():
-        self.pc = self.alu('CMP', operand_a, operand_b)
-        self.sub_routine = True
-        
-    def jeq_op():
- 
-    def jne_op():
-        if (self.flag >> 3 & 0b1000) = 0 :
-            self.pc = self.reg[operand_a]
-            self.sub_routine = True
-        else:
-            self.sub_routine = False
-        
-
-    #stretch
-    def st():
-        pass
-    def add_op():
-        pass
-    def or_op():
-        pass
-    def xor_op():
-        pass
-    def not_op():
-        pass
-    def shl_op():
-        pass
-    def shr_op():
-        pass
-    def mod_op():
-        pass
-    def int_op():
-        pass
-    def iret_op():
-        pass
-
+    
     def load(self):
         """Load a program into memory."""
 
@@ -244,14 +174,15 @@ class CPU:
         """Run the CPU."""
  
         while not self.HALTED:
-            IR = ram_read(self , self.pc)
+            IR = self.ram[self.pc]
+            operands = IR  >> 6  & 0b11
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
-            operands = (IR  >> 6 ) & 0b11000000
-            if IR in branchTable:
-                branchTable[IR]()
+        
+            if IR in self.branchTable:
+                self.branchTable[IR](operand_a , operand_b)
             else:
-                raise Exception(f"Invalid instruction {hex(ir)} at address {hex(pc)}")
+                raise Exception(f"Invalid instruction {IR:08b} at address {hex(self.pc)}")
             if not self.sub_routine:
                 self.pc += operands + 1
 
@@ -278,5 +209,87 @@ class CPU:
             #     print(f"Unknown Instruction {IR:08b}")
             #     sys.exit(1)
           
-            
+    def halt_op(self, operand_a , operand_b):
+        self.HALTED = True
+
+    def pop_op(self, operand_a , operand_b):
+        self.reg[operand_a] = self.ram_read(self.reg[self.sp])
+        self.reg[self.sp] += 1
+
+    def push_op(self, operand_a , operand_b):
+        self.reg[self.sp] -= 1
+        value = self.reg[operand_a]
+        address = self.reg[self.sp]
+        self.raw_write(address, value)
+        self.sub_routine = False
+
+    def prn_op(self, operand_a , operand_b):
+        print(self.reg[operand_a])
+        self.sub_routine = False
+
+    def ldi_op(self, operand_a , operand_b):
+        self.reg[operand_a] = operand_b
+        self.sub_routine = False
+
+    def add_op(self, operand_a , operand_b):
+        self.alu("ADD", operand_a, operand_b)
+        self.sub_routine = False
+
+    def mul_op(self, operand_a , operand_b):
+        self.alu("MUL", operand_a, operand_b)
+        self.sub_routine = False
+
+    def call_op(self, operand_a , operand_b):
+        self.reg[self.sp] -= 1
+        self.raw_write(self.reg[self.sp] , self.pc + 2)
+        self.pc = self.reg[operand_a]
+        self.sub_routine = True
+
+    def ret_op(self, operand_a , operand_b):
+        self.pc = self.ram_read(self.reg[self.sp])
+        self.reg[self.sp] += 1
+        self.sub_routine = True
+        
+    def jmp_op(self, operand_a , operand_b):
+        self.pc = self.reg[operand_a]
+        self.sub_routine = True
+        
+    def cmp_op(self, operand_a , operand_b):
+        self.alu('CMP', operand_a, operand_b)
+        self.sub_routine = False
+        
+    def jeq_op(self, operand_a , operand_b):
+        if self.flag == 0b001:
+            self.pc = self.reg[operand_a]
+            self.sub_routine = True
+        else:
+            self.sub_routine = False
+    def jne_op(self, operand_a , operand_b):
+        if self.flag == 0b100 or self.flag == 0b010 :
+            self.pc = self.reg[operand_a]
+            self.sub_routine = True
+        else:
+            self.sub_routine = False
+    #stretch
+    def st(self):
+        pass
+    def add_op(self):
+        pass
+    def or_op(self):
+        pass
+    def xor_op(self):
+        pass
+    def not_op(self):
+        pass
+    def shl_op(self):
+        pass
+    def shr_op(self):
+        pass
+    def mod_op(self):
+        pass
+    def int_op(self):
+        pass
+    def iret_op(self):
+        pass
+    
     
