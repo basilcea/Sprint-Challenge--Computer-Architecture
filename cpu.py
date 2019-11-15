@@ -70,7 +70,7 @@ class CPU:
             JMP: self.jmp_op,
             CALL: self.call_op,
             RET: self.ret_op,
-            ADD: self.add_op,
+            AND: self.and_op,
             OR: self.or_op,
             XOR: self.xor_op,
             NOT: self.not_op,
@@ -130,6 +130,25 @@ class CPU:
             # for mulitplication operation
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "AND":
+            result = self.reg[reg_a] & self.reg[reg_b]
+            self.reg[reg_a] = result
+        elif op == "OR":
+            result = self.reg[reg_a] | self.reg[reg_b]
+            self.reg[reg_a] = result
+        elif op == "XOR":
+            result = self.reg[reg_a] ^ self.reg[reg_b]
+            self.reg[reg_a] = result
+        elif op == "SHL":
+            result = self.reg[reg_a] << self.reg[reg_b]
+            self.reg[reg_a] = result
+        elif op == "SHR":
+            result = self.reg[reg_a] >> self.reg[reg_b]
+            self.reg[reg_a] = result
+        elif op == "NOT":
+            # Perform a bitwise-NOT on the value in a register
+            result = ~self.reg[reg_a]
+            self.reg[reg_a] = result
         #elif op == "SUB": etc
         elif op == 'CMP':
             if self.reg[reg_a] == self.reg[reg_b]:
@@ -273,10 +292,12 @@ class CPU:
     #stretch
     def st(self):
         pass
-    def add_op(self):
-        pass
+    def and_op(self, operand_a , operand_b):
+        self.alu('AND', operand_a , operand_b)
+        self.sub_routine = False
     def or_op(self):
-        pass
+        self.alu('OR', operand_a , operand_b)
+        self.sub_routine = False
     def xor_op(self):
         pass
     def not_op(self):
