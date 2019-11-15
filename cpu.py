@@ -149,6 +149,13 @@ class CPU:
             # Perform a bitwise-NOT on the value in a register
             result = ~self.reg[reg_a]
             self.reg[reg_a] = result
+        elif op == "MOD":
+            if self.reg[reg_b] == 0:
+                raise Exception(f'Can not perform operation at {self.IR:08b}')
+                self.handle_HLT(None)
+            else:
+                result = self.reg[reg_a] % self.reg[reg_b]
+                self.reg[reg_a] = result 
         #elif op == "SUB": etc
         elif op == 'CMP':
             if self.reg[reg_a] == self.reg[reg_b]:
